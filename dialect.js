@@ -130,7 +130,7 @@ function parse(input) {
   function parse_if() {
     skip_kw("if");
     var cond = parse_expression();
-    if (!is_punc("{")) skip_kw("then");
+    if (!is_punc("|")) skip_kw("then");
     var then = parse_expression();
     var ret = {
       type: "if",
@@ -178,7 +178,7 @@ function parse(input) {
         skip_punc(")");
         return exp;
       }
-      if (is_punc("{")) return parse_prog();
+      if (is_punc("|")) return parse_prog();
       if (is_op("!")) {
         input.next();
         return {
@@ -209,7 +209,7 @@ function parse(input) {
     return { type: "prog", prog: prog };
   }
   function parse_prog() {
-    var prog = delimited("{", "}", ";", parse_expression);
+    var prog = delimited("|", "|", ";", parse_expression);
     if (prog.length == 0) return FALSE;
     if (prog.length == 1) return prog[0];
     return { type: "prog", prog: prog };
@@ -275,7 +275,7 @@ function TokenStream(input) {
     return "+-*/%=&|<>!".indexOf(ch) >= 0;
   }
   function is_punc(ch) {
-    return ",;(){}[]:".indexOf(ch) >= 0;
+    return ",;(){}[]:|".indexOf(ch) >= 0;
   }
   function is_whitespace(ch) {
     return " \t\n\r".indexOf(ch) >= 0;
