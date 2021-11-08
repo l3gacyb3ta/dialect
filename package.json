@@ -1,0 +1,11 @@
+{
+  "name": "dialect",
+  "version": "0.1.0",
+  "description": "A modern, opinionated programming language that compiles to JS.",
+  "main": "dialect.js",
+  "author": "Arcade Wise",
+  "license": "UNLICENSE",
+  "dependencies": {
+    "uglify-js": "^3.14.3"
+  }
+}
