@@ -1,0 +1,3 @@
+print = js:raw "function(k, text) {
+    console.log(text);
+}";

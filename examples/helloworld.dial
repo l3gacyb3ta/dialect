@@ -1,0 +1,3 @@
+import builtins;
+
+print("hello world");

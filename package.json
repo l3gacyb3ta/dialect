@@ -6,6 +6,7 @@
   "author": "Arcade Wise",
   "license": "UNLICENSE",
   "dependencies": {
+    "neodoc": "^2.0.2",
     "uglify-js": "^3.14.3"
   }
 }
