@@ -1,4 +1,44 @@
-"use strict";
+var fs = require("fs");
+
+("use strict");
+
+// TODO oh god infinite imports
+// maybe just compile down imports and inject them at the AST phase?
+
+function pre_processor(code) {
+  // this is just some manual pre-processing for things like imports and pragmas [TODO: Pragmas]
+  // this is run on raw stdin, so dont break anything.
+  // ALSO THIS NEEDS TO BE WATCHED, IT COULD BE USED TO INJECT ARBITRARY CODE
+
+  // Split the code into lines based on operating system
+  var lines = code.split(/\r\n|\r|\n/);
+
+  var imports = [];
+
+  for (var line in lines) {
+    line = lines[line];
+    if (line.split(" ")[0] == "import") {
+      var file = line.split(" ")[1].replace(";", "");
+      console.log("Importing file: " + file);
+      imports.push(file);
+
+      //remove this line from lines
+      delete lines[lines.indexOf(line)];
+    }
+  }
+  code = lines.join("\n");
+
+  for (var imprt in imports) {
+    var file = imports[imprt];
+    var raw = fs.readFileSync(file + ".dial", "utf8");
+
+    //console.log(raw)
+
+    code = raw + "\n" + code;
+  }
+
+  return code;
+}
 
 /* -----[ the parser ]----- */
 
