@@ -1,4 +1,8 @@
-import builtins;
+print = js:raw "function(k, text) {
+    console.log(text);
+    k();
+}";
+
 
 fib = with(n) |
     if n <= 2 |
@@ -8,4 +12,4 @@ fib = with(n) |
     |;
 |;
 
-print(fib(10));
+print(fib(7));

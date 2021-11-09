@@ -141,6 +141,7 @@ function parse(input) {
     }
     return { name: name, def: def };
   }
+  
   function parse_let() {
     skip_kw("let");
     if (input.peek().type == "var") {
@@ -226,7 +227,7 @@ function parse(input) {
           body: parse_atom(),
         };
       }
-      if (is_kw("in")) return parse_let();
+      if (is_kw("let")) return parse_let();
       if (is_kw("if")) return parse_if();
       if (is_kw("true") || is_kw("false")) return parse_bool();
       if (is_kw("js:raw")) return parse_raw();
@@ -292,7 +293,7 @@ function InputStream(input) {
 
 function TokenStream(input) {
   var current = null;
-  var keywords = " in if then else with true false js:raw ";
+  var keywords = " in if then else with true false js:raw let ";
   return {
     next: next,
     peek: peek,
@@ -1351,17 +1352,24 @@ options:
 
   code = pre_processor(fs.readFileSync(String(compileArgs["<file>"]), "utf8"));
 
+  var u2 = require("uglify-js");
+
+  var print = function (k) {
+    console.log([].slice.call(arguments, 1).join(" "));
+    k(false);
+  };
+
+  code = pre_processor(code);
+
   var ast = parse(TokenStream(InputStream(code)));
   var cps = to_cps(ast, function (x) {
-    return {
-      type: "call",
-      func: { type: "var", value: "dial_TOPLEVEL" },
-      args: [x],
-    };
+    return x
   });
 
-  var opt = optimize(cps);
+  //console.log(sys.inspect(cps, { depth: null }));
 
+  var opt = optimize(cps);
+  //var opt = cps; make_scope(opt);
   var jsc = make_js(opt);
 
   jsc = "var dial_TMP;\n\n" + jsc;
@@ -1386,6 +1394,21 @@ options:
 
   jsc = '"use strict";\n\n' + jsc;
 
+  try {
+    console.log(
+      u2.parse(jsc).print_to_string({
+        beautify: true,
+        indent_level: 2,
+      })
+    );
+  } catch (ex) {
+    console.log(ex);
+    throw ex;
+  }
+
+  //sys.error(jsc);
+
+  //sys.error("\n\n/*");
   var runtime = `
 var STACKLEN,
 IN_EXECUTE = false;
@@ -1396,9 +1419,7 @@ IN_EXECUTE = false;
 
   runtime += "\n" + jsc;
 
-  console.log(compileArgs)
-
-  fs.writeFileSync(String(compileArgs["-o"]), runtime);
+  fs.writeFileSync("out.js", runtime);
 } else if (args["<command>"] == "run" || args["<command>"] == "r") {
   const runArgs = neodoc.run(
     `
