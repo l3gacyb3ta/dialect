@@ -1,0 +1,13 @@
+import cli;
+import builtins;
+
+args = getArgs();
+
+interpret = with(command) |
+    if command == "hello" then
+        print("Hello, world!");
+    if command == "uwu" then
+        print("owo");
+|;
+
+interpret(arrayGet(args, 2));

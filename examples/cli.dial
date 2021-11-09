@@ -1,0 +1,4 @@
+getArgs = js:raw "function getArgs(k) {
+  k(process.argv);
+}";
+

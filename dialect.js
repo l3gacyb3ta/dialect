@@ -1,4 +1,4 @@
-var fs = require("fs");
+const fs = require("fs");
 
 ("use strict");
 
@@ -32,6 +32,8 @@ function pre_processor(code) {
     var file = imports[imprt];
     var raw = fs.readFileSync(file + ".dial", "utf8");
 
+    raw = pre_processor(raw); // make sure to import dependencies from dependencies aswell
+
     //console.log(raw)
 
     code = raw + "\n" + code;
@@ -43,6 +45,8 @@ function pre_processor(code) {
 /* -----[ the parser ]----- */
 
 function parse(input) {
+  console.log("Parsing...");
+
   var PRECEDENCE = {
     "=": 1,
     "||": 2,
@@ -141,7 +145,7 @@ function parse(input) {
     }
     return { name: name, def: def };
   }
-  
+
   function parse_let() {
     skip_kw("let");
     if (input.peek().type == "var") {
@@ -292,6 +296,7 @@ function InputStream(input) {
 }
 
 function TokenStream(input) {
+  console.log("Tokenizing...");
   var current = null;
   var keywords = " in if then else with true false js:raw let ";
   return {
@@ -412,6 +417,8 @@ function TokenStream(input) {
 /* -----[ code generator ]----- */
 
 function make_js(exp) {
+  process.stdout.write(".");
+
   return js(exp);
 
   function js(exp) {
@@ -599,6 +606,7 @@ function has_side_effects(exp) {
 }
 
 function to_cps(exp, k) {
+  console.log("Converting to CPS...");
   return cps(exp, k);
 
   function cps(exp, k) {
@@ -787,6 +795,8 @@ Environment.prototype = {
 /* -----[ optimizer ]----- */
 
 function optimize(exp) {
+  console.log("Optimizing AST...");
+
   var changes, defun;
   do {
     changes = 0;
@@ -1220,264 +1230,138 @@ function Execute(f, args) {
   IN_EXECUTE = false;
 }
 
-/* -----[ NodeJS CLI test ]----- 
+function dialup() {
+  const neodoc = require("neodoc");
 
-if (typeof process != "undefined")
-  (function () {
-    var u2 = require("uglify-js");
-    var sys = require("util");
-    var print = function (k) {
-      console.log([].slice.call(arguments, 1).join(" "));
-      k(false);
-    };
-    function readStdin(callback) {
-      var text = "";
-      process.stdin.setEncoding("utf8");
-      process.stdin.on("readable", function () {
-        var chunk = process.stdin.read();
-        if (chunk) text += chunk;
-      });
-      process.stdin.on("end", function () {
-        callback(text);
-      });
-    }
-
-    readStdin(function (code) {
-      code = pre_processor(code);
-
-      var ast = parse(TokenStream(InputStream(code)));
-      var cps = to_cps(ast, function (x) {
-        return {
-          type: "call",
-          func: { type: "var", value: "dial_TOPLEVEL" },
-          args: [x],
-        };
-      });
-
-      //console.log(sys.inspect(cps, { depth: null }));
-
-      var opt = optimize(cps);
-      //var opt = cps; make_scope(opt);
-      var jsc = make_js(opt);
-
-      jsc = "var dial_TMP;\n\n" + jsc;
-
-      if (opt.env) {
-        var vars = Object.keys(opt.env.vars);
-        if (vars.length > 0) {
-          jsc =
-            "var " +
-            vars
-              .map(function (name) {
-                return make_js({
-                  type: "var",
-                  value: name,
-                });
-              })
-              .join(", ") +
-            ";\n\n" +
-            jsc;
-        }
-      }
-
-      jsc = '"use strict";\n\n' + jsc;
-
-      try {
-        console.log(
-          u2.parse(jsc).print_to_string({
-            beautify: true,
-            indent_level: 2,
-          })
-        );
-      } catch (ex) {
-        console.log(ex);
-        throw ex;
-      }
-
-      //sys.error(jsc);
-
-      //sys.error("\n\n/*");
-      var func = new Function(
-        "dial_TOPLEVEL, GUARD, print, require, Execute",
-        jsc
-      );
-
-      console.time("Runtime");
-      Execute(func, [
-        function (result) {
-          console.timeEnd("Runtime");
-          console.log("***Result: " + result);
-          console.log("*");
-        },
-        GUARD,
-        print,
-        require,
-        Execute,
-      ]);
-
-      var runtime = `
-var STACKLEN,
-IN_EXECUTE = false;
-`;
-
-      runtime +=
-        Continuation + "\n" + GUARD + "\n" + require + "\n" + Execute + "\n";
-
-      runtime += "\n" + jsc;
-
-      fs.writeFileSync("out.js", runtime);
-    });
-  })();
-  */
-
-const neodoc = require("neodoc");
-
-const args = neodoc.run(
-  `
+  const args = neodoc.run(
+    `
 usage: dialup <command> [<args>...]
   `,
-  { optionsFirst: true, smartOptions: true }
-);
+    { optionsFirst: true, smartOptions: true }
+  );
 
-if (args["<command>"] == "compile" || args["<command>"] == "c") {
-  const compileArgs = neodoc.run(
-    `
+  if (args["<command>"] == "compile" || args["<command>"] == "c") {
+    const compileArgs = neodoc.run(
+      `
 usage: dialup compile [-o <output>] <file>
 
 options:
   -o <output>  Output file [default: out.js]
   `,
-    { optionsFirst: true, smartOptions: true }
-  );
-
-  code = pre_processor(fs.readFileSync(String(compileArgs["<file>"]), "utf8"));
-
-  var u2 = require("uglify-js");
-
-  var print = function (k) {
-    console.log([].slice.call(arguments, 1).join(" "));
-    k(false);
-  };
-
-  code = pre_processor(code);
-
-  var ast = parse(TokenStream(InputStream(code)));
-  var cps = to_cps(ast, function (x) {
-    return x
-  });
-
-  //console.log(sys.inspect(cps, { depth: null }));
-
-  var opt = optimize(cps);
-  //var opt = cps; make_scope(opt);
-  var jsc = make_js(opt);
-
-  jsc = "var dial_TMP;\n\n" + jsc;
-
-  if (opt.env) {
-    var vars = Object.keys(opt.env.vars);
-    if (vars.length > 0) {
-      jsc =
-        "var " +
-        vars
-          .map(function (name) {
-            return make_js({
-              type: "var",
-              value: name,
-            });
-          })
-          .join(", ") +
-        ";\n\n" +
-        jsc;
-    }
-  }
-
-  jsc = '"use strict";\n\n' + jsc;
-
-  try {
-    console.log(
-      u2.parse(jsc).print_to_string({
-        beautify: true,
-        indent_level: 2,
-      })
+      { optionsFirst: true, smartOptions: true }
     );
-  } catch (ex) {
-    console.log(ex);
-    throw ex;
-  }
 
-  //sys.error(jsc);
+    code = pre_processor(
+      fs.readFileSync(String(compileArgs["<file>"]), "utf8")
+    );
 
-  //sys.error("\n\n/*");
-  var runtime = `
+    code = pre_processor(code);
+
+    var ast = parse(TokenStream(InputStream(code)));
+    var cps = to_cps(ast, function (x) {
+      return x;
+    });
+
+    //console.log(sys.inspect(cps, { depth: null }));
+
+    var opt = optimize(cps);
+    //var opt = cps; make_scope(opt);
+    var jsc = make_js(opt);
+
+    jsc = "var dial_TMP;\n\n" + jsc;
+
+    if (opt.env) {
+      var vars = Object.keys(opt.env.vars);
+      if (vars.length > 0) {
+        jsc =
+          "var " +
+          vars
+            .map(function (name) {
+              return make_js({
+                type: "var",
+                value: name,
+              });
+            })
+            .join(", ") +
+          ";\n\n" +
+          jsc;
+      }
+    }
+
+    jsc = '"use strict";\n\n' + jsc;
+
+    var runtime = `
 var STACKLEN,
 IN_EXECUTE = false;
 `;
 
-  runtime +=
-    Continuation + "\n" + GUARD + "\n" + require + "\n" + Execute + "\n";
+    runtime +=
+      Continuation + "\n" + GUARD + "\n";
 
-  runtime += "\n" + jsc;
+    runtime += "\n" + jsc;
 
-  fs.writeFileSync("out.js", runtime);
-} else if (args["<command>"] == "run" || args["<command>"] == "r") {
-  const runArgs = neodoc.run(
-    `
+    fs.writeFileSync("out.js", runtime);
+  } else if (args["<command>"] == "run" || args["<command>"] == "r") {
+    const runArgs = neodoc.run(
+      `
 usage: dialup run <file>
   `,
-    { optionsFirst: true, smartOptions: true }
-  );
+      { optionsFirst: true, smartOptions: true }
+    );
 
-  code = pre_processor(fs.readFileSync(String(runArgs["<file>"]), "utf8"));
+    code = pre_processor(fs.readFileSync(String(runArgs["<file>"]), "utf8"));
 
-  var ast = parse(TokenStream(InputStream(code)));
-  var cps = to_cps(ast, function (x) {
-    return {
-      type: "call",
-      func: { type: "var", value: "dial_TOPLEVEL" },
-      args: [x],
-    };
-  });
+    var ast = parse(TokenStream(InputStream(code)));
+    var cps = to_cps(ast, function (x) {
+      return {
+        type: "call",
+        func: { type: "var", value: "dial_TOPLEVEL" },
+        args: [x],
+      };
+    });
 
-  //console.log(sys.inspect(cps, { depth: null }));
+    var opt = optimize(cps);
+    //var opt = cps; make_scope(opt);
+    process.stdout.write("Codegen");
+    var jsc = make_js(opt);
+    // process.stdout.write("\n");
 
-  var opt = optimize(cps);
-  //var opt = cps; make_scope(opt);
-  var jsc = make_js(opt);
+    jsc = "var dial_TMP;\n\n" + jsc;
 
-  jsc = "var dial_TMP;\n\n" + jsc;
-
-  if (opt.env) {
-    var vars = Object.keys(opt.env.vars);
-    if (vars.length > 0) {
-      jsc =
-        "var " +
-        vars
-          .map(function (name) {
-            return make_js({
-              type: "var",
-              value: name,
-            });
-          })
-          .join(", ") +
-        ";\n\n" +
-        jsc;
+    if (opt.env) {
+      var vars = Object.keys(opt.env.vars);
+      if (vars.length > 0) {
+        jsc =
+          "var " +
+          vars
+            .map(function (name) {
+              return make_js({
+                type: "var",
+                value: name,
+              });
+            })
+            .join(", ") +
+          ";\n\n" +
+          jsc;
+      }
     }
+
+    jsc = '"use strict";\n\n' + jsc;
+
+    var func = new Function("dial_TOPLEVEL, GUARD, require", jsc);
+
+    console.time("Runtime");
+    Execute(func, [
+      function (result) {
+        console.timeEnd("Runtime");
+        console.log("***Result: " + result);
+        console.log("*");
+      },
+      GUARD,
+      require,
+      Execute,
+    ]);
   }
-
-  jsc = '"use strict";\n\n' + jsc;
-
-  var func = new Function("dial_TOPLEVEL, GUARD, require, Execute", jsc);
-
-  console.time("Runtime");
-  Execute(func, [
-    function (result) {
-      console.timeEnd("Runtime");
-      console.log("***Result: " + result);
-      console.log("*");
-    },
-    GUARD,
-    require,
-    Execute,
-  ]);
 }
+
+dialup();
