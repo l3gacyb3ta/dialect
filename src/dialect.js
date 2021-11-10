@@ -1,16 +1,19 @@
-const fs = require("fs");
-
 ("use strict");
 
 // TODO oh god infinite imports
 // maybe just compile down imports and inject them at the AST phase?
 
 function pre_processor(code) {
+  b1.increment(10, {operation: "Preprocessing"});
+
+  const fs = require("fs");
+
   // this is just some manual pre-processing for things like imports and pragmas [TODO: Pragmas]
   // this is run on raw stdin, so dont break anything.
   // ALSO THIS NEEDS TO BE WATCHED, IT COULD BE USED TO INJECT ARBITRARY CODE
 
   // Split the code into lines based on operating system
+
   var lines = code.split(/\r\n|\r|\n/);
 
   var imports = [];
@@ -23,6 +26,9 @@ function pre_processor(code) {
       imports.push(file);
 
       //remove this line from lines
+      delete lines[lines.indexOf(line)];
+    } else if (line.split(" ")[0] == "disable") {
+      output = true;
       delete lines[lines.indexOf(line)];
     }
   }
@@ -45,7 +51,9 @@ function pre_processor(code) {
 /* -----[ the parser ]----- */
 
 function parse(input) {
-  console.log("Parsing...");
+  // console.log("Parsing...");
+
+  b1.increment(48, {operation: "Parsing"});
 
   var PRECEDENCE = {
     "=": 1,
@@ -296,7 +304,8 @@ function InputStream(input) {
 }
 
 function TokenStream(input) {
-  console.log("Tokenizing...");
+  b1.increment(48, {operation: "Tokenizing"});
+  
   var current = null;
   var keywords = " in if then else with true false js:raw let ";
   return {
@@ -417,7 +426,8 @@ function TokenStream(input) {
 /* -----[ code generator ]----- */
 
 function make_js(exp) {
-  process.stdout.write(".");
+  b1.increment(10, {operation: "Codegen"});
+
 
   return js(exp);
 
@@ -498,12 +508,6 @@ function make_js(exp) {
     }
     if (!exp.unguarded) {
       code += "GUARD(arguments, " + CC + "); ";
-
-      // 12% faster in Firefox, no effect in Chrome:
-      //code += "if (--STACKLEN < 0) throw new Continuation(" + CC + ", arguments);";
-
-      // 2x faster in Firefox, but slower in Chrome:
-      //code += "if (--STACKLEN < 0) throw new Continuation(" + CC + ", [ " + exp.vars.map(make_var).join(", ") + " ]);";
     }
     code += js(exp.body) + " })";
     return code;
@@ -606,7 +610,7 @@ function has_side_effects(exp) {
 }
 
 function to_cps(exp, k) {
-  console.log("Converting to CPS...");
+  // console.log("Converting to CPS...");
   return cps(exp, k);
 
   function cps(exp, k) {
@@ -795,7 +799,9 @@ Environment.prototype = {
 /* -----[ optimizer ]----- */
 
 function optimize(exp) {
-  console.log("Optimizing AST...");
+  // console.log("Optimizing AST...");
+  b1.increment(20, {operation: "Optimizing"});
+
 
   var changes, defun;
   do {
@@ -1183,20 +1189,6 @@ function make_scope(exp) {
   return exp.env;
 }
 
-function debug_js(exp) {
-  var u2 = require("uglify-js");
-  var sys = require("util");
-  var jsc = make_js(exp);
-  sys.error(
-    u2.parse(jsc).print_to_string({
-      beautify: true,
-      indent_level: 2,
-    })
-  );
-  // sys.error(jsc);
-  sys.error("/*********************************************/");
-}
-
 var FALSE = { type: "bool", value: false };
 var TRUE = { type: "bool", value: true };
 
@@ -1230,8 +1222,17 @@ function Execute(f, args) {
   IN_EXECUTE = false;
 }
 
-function dialup() {
+const cliProgress = require("cli-progress");
+const b1 = new cliProgress.SingleBar({
+  format: "{operation} |" + "{bar}" + "| {percentage}%",
+  barCompleteChar: "\u2588",
+  barIncompleteChar: "\u2591",
+  hideCursor: true,
+});
+
+export function dialup() {
   const neodoc = require("neodoc");
+  const fs = require("fs");
 
   const args = neodoc.run(
     `
@@ -1240,10 +1241,12 @@ usage: dialup <command> [<args>...]
     { optionsFirst: true, smartOptions: true }
   );
 
+  b1.start(200, 0, {operation: "Dialing up"});
+
   if (args["<command>"] == "compile" || args["<command>"] == "c") {
     const compileArgs = neodoc.run(
       `
-usage: dialup compile [-o <output>] <file>
+usage: dialup compile [-o <output>] [--skip-cps] <file> 
 
 options:
   -o <output>  Output file [default: out.js]
@@ -1251,21 +1254,28 @@ options:
       { optionsFirst: true, smartOptions: true }
     );
 
-    code = pre_processor(
+    b1.update({operation: "Reading"});
+
+    var code = pre_processor(
       fs.readFileSync(String(compileArgs["<file>"]), "utf8")
     );
 
-    code = pre_processor(code);
-
     var ast = parse(TokenStream(InputStream(code)));
-    var cps = to_cps(ast, function (x) {
-      return x;
-    });
 
-    //console.log(sys.inspect(cps, { depth: null }));
+    var cps = {};
+
+    if (compileArgs["--skip-cps"]) {
+      cps = ast;
+    } else {
+      cps = to_cps(ast, function (x) {
+        return x;
+      });
+    }
+    b1.increment(20, {operation: "CPS"});
+
 
     var opt = optimize(cps);
-    //var opt = cps; make_scope(opt);
+
     var jsc = make_js(opt);
 
     jsc = "var dial_TMP;\n\n" + jsc;
@@ -1295,12 +1305,17 @@ var STACKLEN,
 IN_EXECUTE = false;
 `;
 
-    runtime +=
-      Continuation + "\n" + GUARD + "\n";
+    runtime += Continuation + "\n" + GUARD + "\n";
 
     runtime += "\n" + jsc;
 
     fs.writeFileSync("out.js", runtime);
+    b1.update(200, {operation: "Finished!"});
+
+    b1.stop();
+
+
+
   } else if (args["<command>"] == "run" || args["<command>"] == "r") {
     const runArgs = neodoc.run(
       `
@@ -1350,6 +1365,10 @@ usage: dialup run <file>
 
     var func = new Function("dial_TOPLEVEL, GUARD, require", jsc);
 
+    b1.update(200, {operation: "Finished!"});
+
+    b1.stop();
+
     console.time("Runtime");
     Execute(func, [
       function (result) {
@@ -1363,5 +1382,3 @@ usage: dialup run <file>
     ]);
   }
 }
-
-dialup();

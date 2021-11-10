@@ -3,6 +3,6 @@ fib = with(n) |
     else fib(n - 1) + fib(n - 2)
 |;
 
-import builtins;
+import lib/builtins;
 
 print(fib(7));

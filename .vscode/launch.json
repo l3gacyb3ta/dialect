@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\dialect.js",
-            "args": ["run", "${workspaceFolder}\\examples\\test.dial"]
+            "args": ["run", "${workspaceFolder}\\examples\\webtest\\web.dial"]
         }
     ]
 }

@@ -1,0 +1,19 @@
+<html>
+  <body>
+    <script src="main.js" />
+    <script></script>
+    <textarea id="code" rows="10" cols="80"> </textarea>
+    <textarea id="text" rows="10" cols="30" readonly> </textarea>
+    <button onclick="compiler(document.getElementById('code').value)">
+      Interpret & Run
+    </button>
+    <script>
+      document.getElementById("code").value = `fib = with(n) |
+    if n < 2 then n
+    else fib(n - 1) + fib(n - 2)
+|;
+
+print(fib(7));`;
+    </script>
+  </body>
+</html>

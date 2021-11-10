@@ -1,0 +1,16 @@
+
+import ../lib/dom;
+
+h1 = getElementByID("hello");
+uwuNum = 0;
+owoNum = 0;
+
+uwu = with() |
+    uwuNum = uwuNum + 1;
+    setInnerHTML(h1, "UwU! " + uwuNum);
+|;
+
+owo = with() |
+    owoNum = owoNum + 1;
+    setInnerHTML(h1, "OwO! " + owoNum);
+|;

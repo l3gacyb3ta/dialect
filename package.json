@@ -1,15 +1,17 @@
 {
-  "name": "dialect",
+  "name": "dialect-lang",
   "version": "0.1.0",
   "description": "A modern, opinionated programming language that compiles to JS.",
   "main": "dialect.js",
   "author": "Arcade Wise",
   "license": "UNLICENSE",
   "dependencies": {
+    "cli-progress": "^3.9.1",
+    "esm": "^3.2.18",
     "neodoc": "^2.0.2",
     "uglify-js": "^3.14.3"
   },
   "bin": {
-    "dialup": "./dialect.js"
+    "dialup": "bin/entrypoint.js"
   }
 }

@@ -1,3 +1,4 @@
-import builtins;
+import lib/builtins;
 
+print();
 print("hello world");

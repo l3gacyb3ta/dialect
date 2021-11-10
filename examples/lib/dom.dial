@@ -1,0 +1,12 @@
+getElementByID = js:raw "function(k, id) {
+    k(document.getElementById(id));
+}";
+
+setInnerHTML = js:raw "function(k, element, html) {
+    element.innerHTML = html;
+    k();
+}";
+
+sleep = js:raw "function(k, ms) {
+    setTimeout(k, ms);
+}";
