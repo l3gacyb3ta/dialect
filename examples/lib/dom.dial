@@ -1,12 +1,36 @@
-getElementByID = js:raw "function(k, id) {
-    k(document.getElementById(id));
+js:raw "
+console.log('DOM MANIPULATION DOESNT WORK WITH CPS')
+";
+
+getElementByID = js:raw "function(id) {
+    return(document.getElementById(id));
 }";
 
-setInnerHTML = js:raw "function(k, element, html) {
+getValue = js:raw "function(element) {
+    return(element.value);
+}";
+
+setValue = js:raw "function(element, value) {
+    element.value = value;
+}";
+
+
+setInnerHTML = js:raw "function(element, html) {
     element.innerHTML = html;
-    k();
 }";
 
-sleep = js:raw "function(k, ms) {
-    setTimeout(k, ms);
+printWeb = js:raw "function(text) {
+    console.log(text);
+}";
+
+strToInt = js:raw "function(str) {
+    return(parseInt(str));
+}";
+
+intToStr = js:raw "function(int) {
+    return(int.toString());
+}";
+
+strToFloat = js:raw "function(str) {
+    return(parseFloat(str));
 }";

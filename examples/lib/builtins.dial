@@ -22,3 +22,7 @@ arrayGet = js:raw "function(k, array, index) {
 arraySet = js:raw "function(k, array, index, value) {
     k(array[index] = value);
 }";
+
+sleep = js:raw "function(k, ms) {
+    setTimeout(k, ms);
+}";

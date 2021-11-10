@@ -1,0 +1,6 @@
+import lib/builtins;
+
+a = 68;
+a = a + 1
+
+print(a);
