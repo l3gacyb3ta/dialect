@@ -3,7 +3,9 @@
 
 ---
 ## Install
-
+```
+npm i -g dialect-lang
+```
 
 ---
 ## CLI reference
