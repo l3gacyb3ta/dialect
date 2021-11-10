@@ -1,7 +1,16 @@
 ("use strict");
 
+//offset for error messages, to give an acurate line count
+var importOffset = -1;
+
+// countLines counts the lines in a piece of text
+function countLines(text) {
+  var lines = text.split(/\r\n|\r|\n/);
+  return lines.length;
+}
+
 // TODO oh god infinite imports
-// maybe just compile down imports and inject them at the AST phase?
+// maybe just compile down imports and inject them at the AST phase? [ THis would make importOffsets useless ]
 
 function pre_processor(code) {
   b1.increment(10, {operation: "Preprocessing"});
@@ -22,7 +31,7 @@ function pre_processor(code) {
     line = lines[line];
     if (line.split(" ")[0] == "import") {
       var file = line.split(" ")[1].replace(";", "");
-      // console.log("Importing file: " + file);
+
       imports.push(file);
 
       //remove this line from lines
@@ -38,9 +47,9 @@ function pre_processor(code) {
     var file = imports[imprt];
     var raw = fs.readFileSync(file + ".dial", "utf8");
 
-    raw = pre_processor(raw); // make sure to import dependencies from dependencies aswell
+    importOffset -= countLines(raw);
 
-    //console.log(raw)
+    raw = pre_processor(raw); // make sure to import dependencies from dependencies aswell
 
     code = raw + "\n" + code;
   }
@@ -278,7 +287,7 @@ function parse(input) {
 
 function InputStream(input) {
   var pos = 0,
-    line = 1,
+    line = importOffset,
     col = 0;
   return {
     next: next,
