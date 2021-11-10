@@ -13,5 +13,11 @@
   },
   "bin": {
     "dialup": "bin/entrypoint.js"
+  },
+  "scripts": {
+    "release": "npmpub"
+  },
+  "devDependencies": {
+    "npmpub": "^5.0.0"
   }
 }

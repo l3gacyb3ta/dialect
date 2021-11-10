@@ -1,5 +1,10 @@
 # Dialect
 ## A modern, opinionated programming language that compiles to JS.
+
+---
+## Install
+
+
 ---
 ## CLI reference
 The CLI has two modes, compile and run.  
@@ -23,7 +28,6 @@ Note, no standard libraries are included, import them yourself!
 
 #### Usage:
 ```dialup run <file>```
-
 
 ---
 
@@ -78,6 +82,21 @@ print(if b > a then "yay" else "nay")
 *** Result
 yay
 ```
+
+### `js:raw`
+This allows you to provide raw javascript code in the program, and it's what most of the standard library is!
+```
+print = js:raw "function(k, text) {
+    console.log(text);
+    k();
+}";
+
+len = js:raw "function(k, object) {
+    k(object.length);
+}";
+```
+Note the use of `k()` here. This is a byproduct of CPS, as normal returns don't work. If you have CPS diabled (ie. for the web), then these wont work becuase there's not continuation to call. This is why the normal standard library breaks when used without CPS.
+
 ---
 ## Quirks
 If you have recursive imports (smth like this):  
