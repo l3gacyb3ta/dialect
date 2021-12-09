@@ -1,19 +1,56 @@
 <html>
+  <head>
+    <title>Dialect - ONLINE</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/blocks.css/dist/blocks.min.css"
+    />
+  </head>
   <body>
-    <script src="main.js" />
-    <script></script>
-    <textarea id="code" rows="10" cols="80"> </textarea>
-    <textarea id="text" rows="10" cols="30" readonly> </textarea>
-    <button onclick="compiler(document.getElementById('code').value)">
-      Interpret & Run
-    </button>
+    <h1 style="text-align: center">Dialect</h1>
+    <hr style="margin-top: 1rem; margin-bottom: 1rem" />
+    <div>
+      <textarea
+        class=""
+        style="display: inline; resize: none; border-radius: 3px; padding: 4px 8px; position: relative; box-sizing: border-box; top: -2px; left: -2px; margin: 8px 6px 10px; border: 3px solid var(--block-text-color);"
+        id="code"
+        rows="10"
+        cols="80"
+      >
+      </textarea>
+      <textarea
+        class="block fixed"
+        style="
+          background-color: black;
+          color: white;
+          display: inline;
+          resize: none;
+        "
+        id="text"
+        rows="10"
+        cols="30"
+        readonly
+      >
+      </textarea>
+    </div>
+    <div style="--block-background-color: #3a5ec5;">
+      <button
+        class="block"
+        style="margin: 1rem; color: white"
+        onclick="compiler(document.getElementById('code').value)"
+      >
+        Interpret & Run!
+      </button>
+    </div>
+
     <script>
       document.getElementById("code").value = `fib = with(n) |
-    if n < 2 then n
-    else fib(n - 1) + fib(n - 2)
+  if n < 2 then n
+  else fib(n - 1) + fib(n - 2)
 |;
-
+      
 print(fib(7));`;
     </script>
+    <script src="main.js"></script>
   </body>
 </html>
